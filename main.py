@@ -1,35 +1,35 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="本のリサーチDB", layout="wide")
+st.set_page_config(page_title="本のリサーチDB")
 
-def check_password():
-    if st.session_state.get("password_correct", False):
-        return True
-    st.title("🔒 ログイン")
-    pwd = st.text_input("合言葉を入力してください", type="password")
+# --- 認証 ---
+if "auth" not in st.session_state:
+    st.session_state.auth = False
+
+if not st.session_state.auth:
+    pwd = st.text_input("合言葉(33)", type="password")
     if st.button("ログイン"):
         if pwd == st.secrets.get("APP_PASSWORD", "33"):
-            st.session_state["password_correct"] = True
+            st.session_state.auth = True
             st.rerun()
         else:
-            st.error("合言葉が違います")
-    return False
+            st.error("違います")
+    st.stop()
 
-if check_password():
-    st.title("📖 本のリサーチ・コレクション")
-    url = st.secrets.get("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1egitl-X7YL_gQzMuWdwwk8cHo6obsIqVZTux4egYmRU/export?format=csv")
+# --- メイン ---
+st.title("📖 データベース")
 
-    @st.cache_data(ttl=60)
-    def load_data(csv_url):
-        return pd.read_csv(csv_url)
+# Secretsが読み込めていない時のための予備URL
+url = st.secrets.get("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1egitl-X7YL_gQzMuWdwwk8cHo6obsIqVZTux4egYmRU/export?format=csv")
 
-    try:
-        df = load_data(url)
-        q = st.text_input("🔍 キーワード検索", "")
-        if q:
-            df = df[df.astype(str).apply(lambda x: x.str.contains(q, case=False)).any(axis=1)]
-        st.dataframe(df, use_container_width=True, hide_index=True)
-    except Exception as e:
-        st.error(f"データ取得エラー。スプレッドシートの共有設定を確認してください。")
-        
+try:
+    # データを読み込む
+    df = pd.read_csv(url)
+    st.success("データの取得に成功しました！")
+    st.dataframe(df)
+except Exception as e:
+    st.error("取得エラーが発生しました")
+    # ここで「何が原因か」を詳しく表示します
+    st.warning(f"エラーの詳細: {e}")
+    st.info(f"現在読み込もうとしているURL: {url}")
