@@ -8,7 +8,7 @@ if "auth" not in st.session_state:
     st.session_state.auth = False
 
 if not st.session_state.auth:
-    pwd = st.text_input("合言葉(33)", type="password")
+    pwd = st.text_input("合言葉", type="password")
     if st.button("ログイン"):
         if pwd == st.secrets.get("APP_PASSWORD", "33"):
             st.session_state.auth = True
@@ -69,3 +69,4 @@ try:
 
 except Exception as e:
     st.error(f"エラーが発生しました: {e}")
+
