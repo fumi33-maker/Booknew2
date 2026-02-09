@@ -17,6 +17,14 @@ if not st.session_state.auth:
             st.error("違います")
     st.stop()
 
+# --- 検索キーワードの保持用 ---
+if "search_word" not in st.session_state:
+    st.session_state.search_word = ""
+
+# --- クリアボタンが押された時の処理 ---
+def clear_search():
+    st.session_state.search_word = ""
+
 # --- サイドバー（左側メニュー） ---
 with st.sidebar:
     st.title("🛠 操作パネル")
@@ -30,22 +38,27 @@ with st.sidebar:
     
     # キーワード検索欄
     st.subheader("🔍 検索")
-    search_query = st.text_input("キーワードを入力", placeholder="例: ビジネス, 小説...")
+    search_query = st.text_input(
+        "キーワードを入力", 
+        value=st.session_state.search_word, # ここに保持された値をいれる
+        key="search_input", # 一意のキー
+        placeholder="例: ビジネス, 小説..."
+    )
+    
+    # クリアボタン
+    if st.button("検索をクリア", on_click=clear_search):
+        st.rerun()
 
 # --- メインコンテンツ ---
 st.title("📖 データベース")
 
-# Secretsが読み込めていない時のための予備URL
 url = st.secrets.get("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1egitl-X7YL_gQzMuWdwwk8cHo6obsIqVZTux4egYmRU/export?format=csv")
 
 try:
-    # データを読み込む
     df = pd.read_csv(url)
 
-    # --- 検索処理 ---
+    # --- 検索処理（search_query を使用） ---
     if search_query:
-        # 全ての列を対象に、キーワードが含まれている行を抽出（大文字小文字を区別しない）
-        # .astype(str) で全てのデータを文字列として扱い、検索漏れを防ぎます
         mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)
         df_display = df[mask]
     else:
@@ -60,5 +73,4 @@ try:
     st.dataframe(df_display, use_container_width=True)
 
 except Exception as e:
-    st.error("取得エラーが発生しました")
-    st.warning(f"エラーの詳細: {e}")
+    st.error(f"エラーが発生しました: {e}")
