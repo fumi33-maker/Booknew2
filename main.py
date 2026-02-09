@@ -17,37 +17,32 @@ if not st.session_state.auth:
             st.error("違います")
     st.stop()
 
-# --- 検索キーワードの保持用 ---
-if "search_word" not in st.session_state:
-    st.session_state.search_word = ""
-
-# --- クリアボタンが押された時の処理 ---
+# --- クリアボタン用の関数 ---
 def clear_search():
-    st.session_state.search_word = ""
+    # 入力欄の値を直接「空」に上書きする
+    st.session_state["search_input"] = ""
 
 # --- サイドバー（左側メニュー） ---
 with st.sidebar:
     st.title("🛠 操作パネル")
     
-    # ログアウトボタン
     if st.button("ログアウト"):
         st.session_state.auth = False
         st.rerun()
     
-    st.divider() # 区切り線
+    st.divider()
     
-    # キーワード検索欄
     st.subheader("🔍 検索")
+    
+    # 検索窓（keyを指定するのがポイントです！）
     search_query = st.text_input(
         "キーワードを入力", 
-        value=st.session_state.search_word, # ここに保持された値をいれる
-        key="search_input", # 一意のキー
+        key="search_input", 
         placeholder="例: ビジネス, 小説..."
     )
     
     # クリアボタン
-    if st.button("検索をクリア", on_click=clear_search):
-        st.rerun()
+    st.button("検索をクリア", on_click=clear_search)
 
 # --- メインコンテンツ ---
 st.title("📖 データベース")
@@ -57,14 +52,14 @@ url = st.secrets.get("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/
 try:
     df = pd.read_csv(url)
 
-    # --- 検索処理（search_query を使用） ---
+    # 検索処理
     if search_query:
         mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)
         df_display = df[mask]
     else:
         df_display = df
 
-    # 結果の表示
+    # 表示
     if search_query:
         st.info(f"「{search_query}」での検索結果: {len(df_display)}件")
     else:
